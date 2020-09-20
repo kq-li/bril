@@ -1,7 +1,8 @@
 open! Core
 open! Common
 module Bril_type = Bril_type
-module Common = Common
+module Const = Const
+module Dest = Dest
 module Func = Func
 module Instr = Instr
 module Op = Op
