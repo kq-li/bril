@@ -8,6 +8,10 @@ module Value = struct
       | Const of Bril.Const.t
       | Call
     [@@deriving compare, sexp_of]
+
+    let canonicalize = function
+      | Binary (binop, n1, n2) when n2 > n1 -> Binary (binop, n2, n1)
+      | value -> value
   end
 
   include T
@@ -54,7 +58,7 @@ let process block =
             | Value.Call ->
               (* maybe todo: eliminate redundant pure function calls here? *)
               nums_by_value
-            | value -> Map.set nums_by_value ~key:value ~data:num
+            | value -> Map.set nums_by_value ~key:(Value.canonicalize value) ~data:num
           in
           ( Map.set rows_by_num ~key:num ~data:(num, value, var),
             Map.set nums_by_var ~key:var ~data:num,
