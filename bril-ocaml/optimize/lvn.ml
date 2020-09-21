@@ -6,6 +6,7 @@ module Value = struct
       | Binary of Bril.Op.Binary.t * int * int
       | Unary of Bril.Op.Unary.t * int
       | Const of Bril.Const.t
+      | Id of int
       | Call
     [@@deriving compare, sexp_of]
 
@@ -30,6 +31,7 @@ let process block =
         let dest_and_value =
           match instr with
           | Const (dest, const) -> Some (dest, Value.Const const)
+          | Unary (dest, Bril.Op.Unary.Id, arg) -> Some (dest, Value.Id (num_of_var arg))
           | Unary (dest, unop, arg) -> Some (dest, Value.Unary (unop, num_of_var arg))
           | Binary (dest, binop, arg1, arg2) ->
             Some (dest, Value.Binary (binop, num_of_var arg1, num_of_var arg2))
@@ -72,6 +74,7 @@ let process block =
         | None ->
           (* don't add to table, replace instr args and add instr to block *)
           (rows_by_num, nums_by_var, nums_by_value, new_instr :: block)
+        | Some ((var, _), Id orig_num) -> skip_row orig_num var new_instr
         | Some (((var, _) as dest), value) ->
           ( match num_of_value_opt value with
           | None -> add_row value var new_instr
