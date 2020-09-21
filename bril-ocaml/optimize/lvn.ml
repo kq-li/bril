@@ -24,20 +24,33 @@ let process block =
       block
       ~init:(Int.Map.empty, String.Map.empty, Value.Map.empty, [])
       ~f:(fun (rows_by_num, nums_by_var, nums_by_value, block) (instr : Bril.Instr.t) ->
-        let row_of_num = Map.find_exn rows_by_num in
-        let num_of_var = Map.find_exn nums_by_var in
-        let num_of_value_opt = Map.find nums_by_value in
+        print_s
+          [%message
+            (rows_by_num : (int * Value.t * string) Int.Map.t)
+              (nums_by_var : int String.Map.t)
+              (nums_by_value : int Value.Map.t)
+              (instr : Bril.Instr.t)];
+        print_endline "";
+        let row_of_num = Map.find rows_by_num in
+        let row_of_num_exn = Map.find_exn rows_by_num in
+        let num_of_var = Map.find nums_by_var in
+        let num_of_value = Map.find nums_by_value in
         let dest_and_value =
+          let open Option.Let_syntax in
           match instr with
           | Const (dest, const) -> Some (dest, Value.Const const)
-          | Unary (dest, unop, arg) -> Some (dest, Value.Unary (unop, num_of_var arg))
+          | Unary (dest, unop, arg) ->
+            let%map num = num_of_var arg in
+            (dest, Value.Unary (unop, num))
           | Binary (dest, binop, arg1, arg2) ->
-            Some (dest, Value.Binary (binop, num_of_var arg1, num_of_var arg2))
+            let%bind num1 = num_of_var arg1 in
+            let%map num2 = num_of_var arg2 in
+            (dest, Value.Binary (binop, num1, num2))
           | Call (dest, _, _) -> Option.map dest ~f:(fun dest -> (dest, Value.Call))
           | _ -> None
         in
         let extract_const num =
-          match row_of_num num with
+          match%bind.Option row_of_num num with
           | (_, Value.Const const, _) -> Some const
           | _ -> None
         in
@@ -83,8 +96,11 @@ let process block =
           | _ -> value
         in
         let replace_var var =
-          let (_, _, orig_var) = var |> num_of_var |> row_of_num in
-          orig_var
+          (let open Option.Let_syntax in
+          let%bind num = num_of_var var in
+          let%map (_, _, orig_var) = row_of_num num in
+          orig_var)
+          |> Option.value ~default:var
         in
         let replaced_instr : Bril.Instr.t =
           match instr with
@@ -98,17 +114,17 @@ let process block =
           | _ -> instr
         in
         let make_new_instr dest value : Bril.Instr.t =
-          match (value, num_of_value_opt value) with
+          match (value, num_of_value value) with
           | (Value.Const const, _) -> Const (dest, const)
           | (_, Some orig_num) ->
-            let (_, _, orig_var) = row_of_num orig_num in
+            let (_, _, orig_var) = row_of_num_exn orig_num in
             Unary (dest, Bril.Op.Unary.Id, orig_var)
           | (Value.Unary (unop, num), _) ->
-            let (_, _, var) = row_of_num num in
+            let (_, _, var) = row_of_num_exn num in
             Unary (dest, unop, replace_var var)
           | (Value.Binary (binop, num1, num2), _) ->
-            let (_, _, var1) = row_of_num num1 in
-            let (_, _, var2) = row_of_num num2 in
+            let (_, _, var1) = row_of_num_exn num1 in
+            let (_, _, var2) = row_of_num_exn num2 in
             Binary (dest, binop, replace_var var1, replace_var var2)
           | _ -> replaced_instr
         in
@@ -136,7 +152,7 @@ let process block =
         | Some (((var, _) as dest), value) ->
           let value = value |> fold_value |> Value.canonicalize in
           let new_instr = make_new_instr dest value in
-          ( match (value, num_of_value_opt value) with
+          ( match (value, num_of_value value) with
           | (Unary (Bril.Op.Unary.Id, orig_num), _)
           | (_, Some orig_num) ->
             skip_row orig_num var new_instr
