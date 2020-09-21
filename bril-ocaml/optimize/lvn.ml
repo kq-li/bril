@@ -6,12 +6,11 @@ module Value = struct
       | Binary of Bril.Op.Binary.t * int * int
       | Unary of Bril.Op.Unary.t * int
       | Const of Bril.Const.t
-      | Id of int
       | Call
     [@@deriving compare, sexp_of]
 
     let canonicalize = function
-      | Binary (binop, n1, n2) when n2 > n1 -> Binary (binop, n2, n1)
+      | Binary (binop, n1, n2) when n1 > n2 -> Binary (binop, n2, n1)
       | value -> value
   end
 
@@ -31,18 +30,63 @@ let process block =
         let dest_and_value =
           match instr with
           | Const (dest, const) -> Some (dest, Value.Const const)
-          | Unary (dest, Bril.Op.Unary.Id, arg) -> Some (dest, Value.Id (num_of_var arg))
           | Unary (dest, unop, arg) -> Some (dest, Value.Unary (unop, num_of_var arg))
           | Binary (dest, binop, arg1, arg2) ->
             Some (dest, Value.Binary (binop, num_of_var arg1, num_of_var arg2))
           | Call (dest, _, _) -> Option.map dest ~f:(fun dest -> (dest, Value.Call))
           | _ -> None
         in
+        let extract_const num =
+          match row_of_num num with
+          | (_, Value.Const const, _) -> Some const
+          | _ -> None
+        in
+        let fold_value value : Value.t =
+          match value with
+          | Value.Unary (unop, orig_num) ->
+            ( match (extract_const orig_num, unop) with
+            | (Some const, Id) -> Const const
+            | (Some (Bool b), Not) -> Const (Bool (not b))
+            | _ -> value )
+          | Value.Binary (binop, orig_num1, orig_num2) ->
+            let fold_ints n1 n2 : Bril.Const.t =
+              match binop with
+              | Add -> Int (n1 + n2)
+              | Mul -> Int (n1 * n2)
+              | Sub -> Int (n1 - n2)
+              | Div -> Int (n1 / n2)
+              | Eq -> Bool (n1 = n2)
+              | Lt -> Bool (n1 < n2)
+              | Gt -> Bool (n1 > n2)
+              | Le -> Bool (n1 <= n2)
+              | Ge -> Bool (n1 >= n2)
+              | _ ->
+                failwithf
+                  "invalid binop %s on ints"
+                  Bril.Op.Binary.(List.Assoc.find_exn by_op binop ~equal)
+                  ()
+            in
+            let fold_bools b1 b2 : Bril.Const.t =
+              match binop with
+              | And -> Bool (b1 && b2)
+              | Or -> Bool (b1 || b2)
+              | _ ->
+                failwithf
+                  "invalid binop %s on bools"
+                  Bril.Op.Binary.(List.Assoc.find_exn by_op binop ~equal)
+                  ()
+            in
+            ( match (extract_const orig_num1, extract_const orig_num2) with
+            | (Some (Int n1), Some (Int n2)) -> Const (fold_ints n1 n2)
+            | (Some (Bool b1), Some (Bool b2)) -> Const (fold_bools b1 b2)
+            | _ -> value )
+          | _ -> value
+        in
         let replace_var var =
           let (_, _, orig_var) = var |> num_of_var |> row_of_num in
           orig_var
         in
-        let new_instr : Bril.Instr.t =
+        let replaced_instr : Bril.Instr.t =
           match instr with
           | Binary (dest, binop, arg1, arg2) ->
             Binary (dest, binop, replace_var arg1, replace_var arg2)
@@ -53,6 +97,21 @@ let process block =
           | Print args -> Print (List.map args ~f:replace_var)
           | _ -> instr
         in
+        let make_new_instr dest value : Bril.Instr.t =
+          match (value, num_of_value_opt value) with
+          | (Value.Const const, _) -> Const (dest, const)
+          | (_, Some orig_num) ->
+            let (_, _, orig_var) = row_of_num orig_num in
+            Unary (dest, Bril.Op.Unary.Id, orig_var)
+          | (Value.Unary (unop, num), _) ->
+            let (_, _, var) = row_of_num num in
+            Unary (dest, unop, replace_var var)
+          | (Value.Binary (binop, num1, num2), _) ->
+            let (_, _, var1) = row_of_num num1 in
+            let (_, _, var2) = row_of_num num2 in
+            Binary (dest, binop, replace_var var1, replace_var var2)
+          | _ -> replaced_instr
+        in
         let add_row value var instr =
           let num = Map.length rows_by_num in
           let nums_by_value =
@@ -60,7 +119,7 @@ let process block =
             | Value.Call ->
               (* maybe todo: eliminate redundant pure function calls here? *)
               nums_by_value
-            | value -> Map.set nums_by_value ~key:(Value.canonicalize value) ~data:num
+            | value -> Map.set nums_by_value ~key:value ~data:num
           in
           ( Map.set rows_by_num ~key:num ~data:(num, value, var),
             Map.set nums_by_var ~key:var ~data:num,
@@ -73,13 +132,14 @@ let process block =
         match dest_and_value with
         | None ->
           (* don't add to table, replace instr args and add instr to block *)
-          (rows_by_num, nums_by_var, nums_by_value, new_instr :: block)
-        | Some ((var, _), Id orig_num) -> skip_row orig_num var new_instr
+          (rows_by_num, nums_by_var, nums_by_value, replaced_instr :: block)
         | Some (((var, _) as dest), value) ->
-          ( match num_of_value_opt value with
-          | None -> add_row value var new_instr
-          | Some orig_num ->
-            let (_, _, orig_var) = row_of_num orig_num in
-            skip_row orig_num var (Unary (dest, Bril.Op.Unary.Id, orig_var)) ))
+          let value = value |> fold_value |> Value.canonicalize in
+          let new_instr = make_new_instr dest value in
+          ( match (value, num_of_value_opt value) with
+          | (Unary (Bril.Op.Unary.Id, orig_num), _)
+          | (_, Some orig_num) ->
+            skip_row orig_num var new_instr
+          | (_, None) -> add_row value var new_instr ))
   in
   List.rev block
