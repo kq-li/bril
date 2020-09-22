@@ -9,7 +9,7 @@
 @main {
   a: int = call @f;
   b: int = call @g;
-  sum1: int = add b a;
+  sum1: int = add a b;
   prod: int = mul sum1 sum1;
   print prod;
 }
