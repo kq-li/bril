@@ -1,0 +1,8 @@
+@f {
+  x: int = const 5;
+  ret x;
+}
+@main {
+  x: int = call @f;
+  print x;
+}

@@ -1,0 +1,8 @@
+@main {
+  x: int = const 1;
+.lbl1:
+.lbl2:
+  y: int = const 2;
+  jmp .lbl1;
+.lbl3:
+}

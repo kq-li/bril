@@ -24,13 +24,13 @@ let process block =
       block
       ~init:(Int.Map.empty, String.Map.empty, Value.Map.empty, [])
       ~f:(fun (rows_by_num, nums_by_var, nums_by_value, block) (instr : Bril.Instr.t) ->
-        print_s
-          [%message
-            (rows_by_num : (int * Value.t * string) Int.Map.t)
-              (nums_by_var : int String.Map.t)
-              (nums_by_value : int Value.Map.t)
-              (instr : Bril.Instr.t)];
-        print_endline "";
+        (* print_s
+         *   [%message
+         *     (rows_by_num : (int * Value.t * string) Int.Map.t)
+         *       (nums_by_var : int String.Map.t)
+         *       (nums_by_value : int Value.Map.t)
+         *       (instr : Bril.Instr.t)];
+         * print_endline ""; *)
         let row_of_num = Map.find rows_by_num in
         let row_of_num_exn = Map.find_exn rows_by_num in
         let num_of_var = Map.find nums_by_var in
