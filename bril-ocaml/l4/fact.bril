@@ -12,4 +12,6 @@
   jmp .header;
 .end:
   print result;
+  print zero;
+  print cond;
 }
