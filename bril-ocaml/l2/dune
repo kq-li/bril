@@ -1,4 +1,4 @@
 (executable
-  (name optimize)
+  (name main)
   (libraries bril core yojson)
   (preprocess (pps ppx_jane)))
