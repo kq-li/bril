@@ -53,7 +53,10 @@ let process_instrs instrs =
     |> String.Map.of_alist_exn
   in
   let preds =
-    Map.fold succs ~init:String.Map.empty ~f:(fun ~key:name ~data:succs preds ->
+    Map.fold
+      succs
+      ~init:(List.map order ~f:(fun name -> (name, [])) |> String.Map.of_alist_exn)
+      ~f:(fun ~key:name ~data:succs preds ->
         List.fold succs ~init:preds ~f:(fun preds succ -> Map.add_multi preds ~key:succ ~data:name))
   in
   (String.Map.of_alist_exn blocks, order, preds, succs)
