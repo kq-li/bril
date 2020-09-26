@@ -41,13 +41,13 @@ let process_instrs instrs =
     List.mapi blocks ~f:(fun i (name, block) ->
         let next =
           match List.last_exn block with
-          | Jmp label -> [ label ]
-          | Br (_, l1, l2) -> [ l1; l2 ]
+          | Jmp label -> [ "label_" ^ label ]
+          | Br (_, l1, l2) -> [ "label_" ^ l1; "label_" ^ l2 ]
           | Ret _ -> []
           | _ ->
             ( match List.nth blocks (i + 1) with
             | None -> []
-            | Some (label, _) -> [ label ] )
+            | Some (name, _) -> [ name ] )
         in
         (name, next))
     |> String.Map.of_alist_exn
