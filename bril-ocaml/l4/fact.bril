@@ -1,0 +1,15 @@
+@main {
+  result: int = const 1;
+  i: int = const 8;
+.header:
+  zero: int = const 0;
+  cond: bool = gt i zero;
+  br cond .body .end;
+.body:
+  result: int = mul result i;
+  one: int = const 1;
+  i: int = sub i one;
+  jmp .header;
+.end:
+  print result;
+}
