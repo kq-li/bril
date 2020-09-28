@@ -1,0 +1,18 @@
+# ARGS: defined
+@main(cond: bool) {
+.block1:
+  a: int = const 47;
+  b: int = const 42;
+  br cond .left .right;
+.left:
+  b: int = const 1;
+  c: int = const 5;
+  jmp .end;
+.right:
+  a: int = const 2;
+  e: int = const 10;
+.end:
+  d: int = sub a c;
+  print d;
+  ret;
+}

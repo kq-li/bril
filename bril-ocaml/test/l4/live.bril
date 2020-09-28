@@ -1,0 +1,19 @@
+# ARGS: live
+@main(cond: bool) {
+.block1:
+  a: int = const 47;
+  b: int = const 42;
+  br cond .left1 .right;
+.left1:
+  b: int = const 1;
+  c: int = const 5;
+  jmp .left2;
+.right:
+  a: int = const 2;
+  c: int = const 10;
+  jmp .end;
+.left2:
+  d: int = add a b;
+.end:
+  print c;
+}
