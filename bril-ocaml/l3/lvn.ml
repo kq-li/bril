@@ -73,21 +73,13 @@ let process block =
               | Gt -> Bool (n1 > n2)
               | Le -> Bool (n1 <= n2)
               | Ge -> Bool (n1 >= n2)
-              | _ ->
-                failwithf
-                  "invalid binop %s on ints"
-                  Bril.Op.Binary.(List.Assoc.find_exn by_op binop ~equal)
-                  ()
+              | _ -> failwithf "invalid binop %s on ints" (Bril.Op.Binary.to_string binop) ()
             in
             let fold_bools b1 b2 : Bril.Const.t =
               match binop with
               | And -> Bool (b1 && b2)
               | Or -> Bool (b1 || b2)
-              | _ ->
-                failwithf
-                  "invalid binop %s on bools"
-                  Bril.Op.Binary.(List.Assoc.find_exn by_op binop ~equal)
-                  ()
+              | _ -> failwithf "invalid binop %s on bools" (Bril.Op.Binary.to_string binop) ()
             in
             ( match (extract_const orig_num1, extract_const orig_num2) with
             | (Some (Int n1), Some (Int n2)) -> Const (fold_ints n1 n2)

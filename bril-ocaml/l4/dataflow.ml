@@ -70,7 +70,7 @@ module Make (M : M_intf) : S with type t := M.t = struct
       |> String.concat ~sep:"\n"
     in
     printf
-      "analyzing %s...\nins:\n%s\nouts:\n%s\n"
+      "current calculation: %s\nins:\n%s\nouts:\n%s\n"
       analysis
       (string_of_map ins)
       (string_of_map outs)

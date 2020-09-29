@@ -1,0 +1,13 @@
+current calculation: live variables
+ins:
+	label_block1 -> {cond}
+	label_left1 -> {a}
+	label_right -> {}
+	label_left2 -> {a, b, c}
+	label_end -> {c}
+outs:
+	label_block1 -> {a}
+	label_left1 -> {a, b, c}
+	label_right -> {c}
+	label_left2 -> {c}
+	label_end -> {}

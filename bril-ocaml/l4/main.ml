@@ -5,9 +5,10 @@ open! Core
 let analyses =
   String.Map.of_alist_exn
     [
-      ("defined", Defined_vars.print);
-      ("live", Live_vars.print);
-      ("reaching", Reaching_defs.print);
+      ("defined", Defined_variables.print);
+      ("live", Live_variables.print);
+      ("reaching", Reaching_definitions.print);
+      ("constant", Constant_propagation.print);
     ]
 
 let default = "defined"
