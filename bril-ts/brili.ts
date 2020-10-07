@@ -651,10 +651,21 @@ function evalInstr(instr: bril.Instruction, state: State): Action {
     }
     let idx = labels.indexOf(state.lastlabel);
     if (idx === -1) {
-      throw error(`phi node had unhandled last label ${state.lastlabel}`);
+      // Last label not handled. Leave uninitialized.
+      state.env.delete(instr.dest);
+    } else {
+      // Copy the right argument (including an undefined one).
+      if (!instr.args || idx >= instr.args.length) {
+        throw error(`phi node needed at least ${idx+1} arguments`);
+      }
+      let src = instr.args[idx];
+      let val = state.env.get(src);
+      if (val === undefined) {
+        state.env.delete(instr.dest);
+      } else {
+        state.env.set(instr.dest, val);
+      }
     }
-    let val = getArgument(instr, state.env, idx);
-    state.env.set(instr.dest, val);
     return NEXT;
   }
 
