@@ -1,0 +1,3 @@
+command = "bril2json < {filename} | dune exec ../../l7/main.exe --no-print-directory | brili -p {args}"
+output.out = "-"
+output.prof = "2"

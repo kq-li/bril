@@ -135,13 +135,10 @@ let from_ssa ({ blocks; _ } as func : Bril.Func.t) =
             | Phi (dest, params) ->
               ( instrs,
                 List.fold params ~init:to_add ~f:(fun to_add (label, arg) ->
-                    let key =
-                      match String.chop_prefix label ~prefix:"__" with
-                      | Some name -> name
-                      | None -> "label_" ^ label
-                    in
-                    Map.add_multi to_add ~key ~data:(Bril.Instr.Unary (dest, Bril.Op.Unary.Id, arg)))
-              )
+                    Map.add_multi
+                      to_add
+                      ~key:label
+                      ~data:(Bril.Instr.Unary (dest, Bril.Op.Unary.Id, arg))) )
             | instr -> (instr :: instrs, to_add))
         in
         (Map.set blocks ~key:block ~data:(List.rev instrs), to_add))
