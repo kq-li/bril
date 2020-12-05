@@ -1,0 +1,18 @@
+@f {
+  x: int = const 4;
+  ret x;
+}
+
+@g {
+  x: int = const 2;
+  ret x;
+}
+
+@main {
+  a: int = call @f;
+  b: int = call @g;
+  sum1: int = add a b;
+  sum2: int = add a b;
+  prod: int = mul sum1 sum2;
+  print prod;
+}

@@ -1,0 +1,6 @@
+@main {
+  a: int = const 42;
+.lbl:
+  b: int = id a;
+  print b;
+}

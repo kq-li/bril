@@ -1,0 +1,6 @@
+@main {
+.lbl1:
+.lbl2:
+  jmp .lbl1;
+.lbl3:
+}

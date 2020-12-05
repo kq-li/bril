@@ -1,0 +1,16 @@
+current calculation: constant propagation
+ins:
+	block_0 -> {}
+outs:
+	block_0 -> {y: 0}
+current calculation: constant propagation
+ins:
+	block_0 -> {}
+	label_t -> {cond: true, x: 1, y: 5, z: 6}
+	label_f -> {cond: true, x: 1, y: 5, z: 6}
+	label_end -> {cond: ?, x: ?, y: 5, z: 6}
+outs:
+	block_0 -> {cond: true, x: 1, y: 5, z: 6}
+	label_t -> {cond: true, x: 2, y: 5, z: 6}
+	label_f -> {cond: false, x: 1, y: 5, z: 6}
+	label_end -> {cond: ?, x: 7, y: 5, z: ?}

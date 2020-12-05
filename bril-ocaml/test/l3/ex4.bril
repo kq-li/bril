@@ -1,0 +1,12 @@
+@f {
+  x: int = const 5;
+  ret x;
+}
+
+@main {
+  x: int = call @f;
+  copy1: int = id x;
+  copy2: int = id copy1;
+  copy3: int = id copy2;
+  print copy3;
+}

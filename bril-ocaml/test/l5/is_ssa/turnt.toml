@@ -1,0 +1,1 @@
+command = "bril2json < {filename} | dune exec ../../../l5/main.exe ssa | python ../../../../examples/is_ssa.py"

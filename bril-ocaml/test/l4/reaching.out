@@ -1,0 +1,11 @@
+current calculation: reaching definitions
+ins:
+	label_block1 -> {arg cond}
+	label_left -> {a: int = const 47, b: int = const 42, arg cond}
+	label_right -> {a: int = const 47, b: int = const 42, arg cond}
+	label_end -> {a: int = const 2, a: int = const 47, b: int = const 1, b: int = const 42, c: int = const 5, c: int = const 10, arg cond}
+outs:
+	label_block1 -> {a: int = const 47, b: int = const 42, arg cond}
+	label_left -> {a: int = const 47, b: int = const 1, c: int = const 5, arg cond}
+	label_right -> {a: int = const 2, b: int = const 42, c: int = const 10, arg cond}
+	label_end -> {a: int = const 2, a: int = const 47, b: int = const 1, b: int = const 42, c: int = const 5, c: int = const 10, arg cond, d: int = sub a c}

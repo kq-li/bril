@@ -1,0 +1,25 @@
+# ARGS: constant
+@f() {
+  y: int = const 0;
+  ret y;
+}
+
+@main(arg: int) {
+  x: int = const 1;
+  y: int = const 5;
+  z: int = const 6;
+  cond: bool = const true;
+  br cond .t .f;
+.t:
+  x: int = const 2;
+  y: int = const 5;
+  jmp .end;
+.f:
+  z: int = add x y;
+  cond: bool = const false;
+  jmp .end;
+.end:
+  x: int = const 7;
+  z: int = call @f;
+  ret;
+}

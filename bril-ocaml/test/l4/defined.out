@@ -1,0 +1,11 @@
+current calculation: defined variables
+ins:
+	label_block1 -> {cond}
+	label_left -> {a, b, cond}
+	label_right -> {a, b, cond}
+	label_end -> {a, b, c, cond, e}
+outs:
+	label_block1 -> {a, b, cond}
+	label_left -> {a, b, c, cond}
+	label_right -> {a, b, cond, e}
+	label_end -> {a, b, c, cond, d, e}

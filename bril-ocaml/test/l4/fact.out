@@ -1,0 +1,11 @@
+current calculation: defined variables
+ins:
+	block_0 -> {}
+	label_header -> {cond, i, one, result, zero}
+	label_body -> {cond, i, one, result, zero}
+	label_end -> {cond, i, one, result, zero}
+outs:
+	block_0 -> {i, result}
+	label_header -> {cond, i, one, result, zero}
+	label_body -> {cond, i, one, result, zero}
+	label_end -> {cond, i, one, result, zero}
