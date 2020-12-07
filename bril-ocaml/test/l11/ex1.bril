@@ -1,0 +1,15 @@
+# ARGS: 10
+@main(x: int) {
+  zero: int = const 0;
+  one: int = const 1;
+  y: int = const 1;
+.header:
+  b: bool = gt x zero;
+  br b .true .false;
+.true:
+  y: int = mul x y;
+  x: int = sub x one;
+  jmp .header;
+.false:
+  print y;
+}

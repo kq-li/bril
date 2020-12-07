@@ -1,0 +1,25 @@
+# ARGS: 42
+@main(x: int): int {
+  one: int = const 1;
+  y: int = add x one;
+  c: int = const 100;
+  cond: bool = lt x c;
+  br cond .true .false;
+.true:
+  z: int = call @f y;
+  ret z;
+.false:
+  z: int = call @g y;
+  ret z;
+}
+
+@f(x: int): int {
+  one: int = const 1;
+  x: int = sub x one;
+  ret x;
+}
+
+@g(x: int): int {
+  c: int = const -1;
+  ret c;
+}

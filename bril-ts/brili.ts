@@ -290,14 +290,15 @@ type Action =
   {"action": "end", "ret": Value | null} |
   {"action": "speculate"} |
   {"action": "commit"} |
-  {"action": "abort", "label": bril.Ident};
+  {"action": "abort", "label": bril.Ident} |
+  {"action": "stop"};
 let NEXT: Action = {"action": "next"};
 
 /**
  * The interpreter state that's threaded through recursive calls.
  */
 type State = {
-  readonly env: Env,
+  env: Env,
   readonly heap: Heap<Value>,
   readonly funcs: readonly bril.Function[],
 
@@ -310,7 +311,14 @@ type State = {
 
   // For speculation: the state at the point where speculation began.
   specparent: State | null,
+
+  // For tracing
+  trace: boolean,
+  lastFunc: string | null,
+  lastIndex: number | null,
 }
+
+class TraceFinished extends Error {}
 
 /**
  * Interpet a call instruction.
@@ -354,6 +362,9 @@ function evalCall(instr: bril.Operation, state: State): Action {
     lastlabel: null,
     curlabel: null,
     specparent: null,  // Speculation not allowed.
+    trace: state.trace,
+    lastFunc: state.lastFunc,
+    lastIndex: state.lastIndex,
   }
   let retVal = evalFunc(func, newState);
   state.icount = newState.icount;
@@ -567,6 +578,9 @@ function evalInstr(instr: bril.Instruction, state: State): Action {
   }
 
   case "print": {
+    if (state.trace) {
+      return {"action": "stop"};
+    }
     let args = instr.args || [];
     let values = args.map(i => get(state.env, i).toString());
     console.log(...values);
@@ -579,6 +593,9 @@ function evalInstr(instr: bril.Instruction, state: State): Action {
 
   case "br": {
     let cond = getBool(instr, state.env, 0);
+    if (state.trace) {
+      console.log(JSON.stringify({"instr": instr, "branch": cond}));
+    }
     if (cond) {
       return {"action": "jump", "label": getLabel(instr, 0)};
     } else {
@@ -719,20 +736,22 @@ function evalFunc(func: bril.Function, state: State): Value | null {
     if ('op' in line) {
       // Run an instruction.
       let action = evalInstr(line, state);
+      if (state.trace && line.op !== "br" && action.action !== "stop") {
+        console.log(JSON.stringify({"instr": line}));
+      }
 
       // Take the prescribed action.
       switch (action.action) {
       case 'end': {
+        state.lastFunc = func.name;
+        state.lastIndex = i;
         // Return from this function.
         return action.ret;
       }
       case 'speculate': {
         // Begin speculation.
-        state = {
-          ...state,
-          env: new Map(state.env),  // Clone the environment.
-          specparent: state,  // Save current state for aborts.
-        };
+        state.specparent = {...state}; // Save current state for aborts.
+        state.env = new Map(state.env); // Clone the environment.
         break;
       }
       case 'commit': {
@@ -748,11 +767,19 @@ function evalFunc(func: bril.Function, state: State): Value | null {
         if (!state.specparent) {
           throw error(`abort in non-speculative state`);
         }
-        let icount = state.icount;
-        state = state.specparent;
-        state.icount = icount;
+        state.env = state.specparent.env;
+        state.lastlabel = state.specparent.lastlabel;
+        state.curlabel = state.specparent.curlabel;
+        state.trace = state.specparent.trace;
+        state.lastFunc = state.specparent.lastFunc;
+        state.lastIndex = state.specparent.lastIndex;
+        state.specparent = state.specparent.specparent;
         break;
       }
+      case 'stop':
+        state.lastFunc = func.name;
+        state.lastIndex = i;
+        throw new TraceFinished();
       case 'next':
       case 'jump':
         break;
@@ -838,6 +865,12 @@ function evalProg(prog: bril.Program) {
     profiling = true;
     args.splice(pidx, 1);
   }
+  let trace = false;
+  let traceIndex = args.indexOf('--trace')
+  if (traceIndex > -1) {
+    trace = true;
+    args.splice(traceIndex, 1);
+  }
 
   // Remaining arguments are for the main function.k
   let expected = main.args || [];
@@ -851,8 +884,21 @@ function evalProg(prog: bril.Program) {
     lastlabel: null,
     curlabel: null,
     specparent: null,
+    trace,
+    lastFunc: null,
+    lastIndex: null,
   }
-  evalFunc(main, state);
+  try {
+    evalFunc(main, state);
+  } catch (e) {
+    if (!e instanceof TraceFinished) {
+      throw(e);
+    }
+  }
+  if (state.trace) {
+    console.log(state.lastFunc);
+    console.log(state.lastIndex);
+  }
 
   if (!heap.isEmpty()) {
     throw error(`Some memory locations have not been freed by end of execution.`);
